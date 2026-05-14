@@ -200,6 +200,16 @@ def get_libero_env_fn(
     return env_fn
 
 
+def get_libero_plus_env_fn(env_name: str):
+    def env_fn():
+        from rldx.eval.sim.LIBERO_PLUS.libero_plus_env import register_libero_plus_envs
+
+        register_libero_plus_envs()
+        return gym.make(env_name)
+
+    return env_fn
+
+
 def get_behavior_env_fn(
     env_name: str,
     env_idx: int,
@@ -228,6 +238,8 @@ def get_gym_env(
         env_fn = get_robocasa_env_fn(
             env_name, seed=seed, robocasa_split=robocasa_split, embodiment_tag=embodiment_tag
         )
+    elif env_name.startswith("libero_plus_sim"):
+        env_fn = get_libero_plus_env_fn(env_name)
     elif env_name.startswith("libero"):
         env_fn = get_libero_env_fn(env_name)
     else:

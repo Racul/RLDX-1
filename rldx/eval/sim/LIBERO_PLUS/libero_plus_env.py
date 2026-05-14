@@ -51,13 +51,17 @@ def invert_gripper_action(action):
 class LiberoPlusEnv(gym.Env):
     """Gymnasium wrapper around LIBERO-Plus OffScreenRenderEnv."""
 
-    def __init__(self, task_bddl_file: str, task_description: str):
+    def __init__(self, task_bddl_file: str, task_description: str, init_states=None):
         self._env = OffScreenRenderEnv(
             bddl_file_name=task_bddl_file,
             camera_heights=256,
             camera_widths=256,
         )
         self._task_description = task_description
+        # LIBERO-Plus paper protocol: deterministic init from init_files
+        # (see external_dependencies/LIBERO-plus/libero/lifelong/metric.py:117 and
+        # libero/lifelong/evaluate.py:260).
+        self._init_states = init_states
         self.observation_space = gym.spaces.Dict(
             {
                 "video.image": gym.spaces.Box(low=0, high=255, shape=(256, 256, 3), dtype=np.uint8),
@@ -108,6 +112,8 @@ class LiberoPlusEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         observation = self._env.reset()
+        if self._init_states is not None:
+            observation = self._env.set_init_state(self._init_states[0])
         observation = self._process_observation(observation)
         info = {"success": self._env.check_success()}
         return observation, info
@@ -153,6 +159,10 @@ def register_libero_plus_envs():
             task_bddl_file = os.path.join(
                 get_libero_path("bddl_files"), task.problem_folder, task.bddl_file
             )
+            try:
+                init_states = task_suite.get_task_init_states(task_id)
+            except Exception:
+                init_states = None
             env_id = f"libero_plus_sim/{task_name}"
             if env_id not in gym.registry:
                 register(
@@ -161,5 +171,6 @@ def register_libero_plus_envs():
                     kwargs={
                         "task_bddl_file": task_bddl_file,
                         "task_description": task_description,
+                        "init_states": init_states,
                     },
                 )
