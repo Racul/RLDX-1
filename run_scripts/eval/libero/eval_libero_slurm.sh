@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=libero_eval
-#SBATCH --partition=rtx3090,a100,ada
+#SBATCH --partition=rtx3090,ada
 #SBATCH --qos=normal
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
