@@ -22,6 +22,11 @@ uv pip install -e $LIBERO_REPO --config-settings editable_mode=compat
 uv pip install --editable $PROJECT_REPO --no-deps
 uv pip install torch==2.5.1 torchvision==0.20.1 pydantic av tianshou==0.5.1 tyro pandas dm_tree einops==0.8.1 albumentations==1.4.18 zmq
 uv pip install transformers==4.51.3 msgpack==1.1.0 msgpack-numpy==0.4.8 gymnasium==0.29.1
+# Required by `import rldx` (eager model-core load): diffusers (MSAT head) and
+# accelerate (backbone modeling_vtc). Installed before the numpy re-pin below so
+# the numpy==1.26.4 pin still wins. Quote accelerate's spec so the shell does not
+# treat ">=" as a redirection.
+uv pip install diffusers==0.35.1 "accelerate>=0.34"
 uv pip install numpy==1.26.4
 
 uv pip install --editable "$PROJECT_REPO" --no-deps
