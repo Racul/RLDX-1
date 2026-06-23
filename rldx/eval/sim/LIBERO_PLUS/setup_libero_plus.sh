@@ -5,7 +5,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_REPO="$SCRIPT_DIR/../../../.."
-LIBERO_PLUS_REPO="$PROJECT_REPO/external_dependencies/LIBERO-plus"
+source "$SCRIPT_DIR/../_bench_env.sh"
+# LIBERO-Plus is a runtime clone (not a submodule), so its whole tree — clone,
+# .libero_config, libero_plus_data/ and the ~6.4GB extracted assets — lives on
+# /data. Honors an explicit LIBERO_PLUS_DATA_DIR (the same var eval reads).
+LIBERO_PLUS_REPO="${LIBERO_PLUS_DATA_DIR:-$RLDX_BENCH_HOME/LIBERO-plus}"
 LIBERO_PLUS_UV_ENV="$SCRIPT_DIR/libero_plus_uv"
 
 # ImageMagick shared libs live under miniconda; wand (imported transitively by
@@ -16,8 +20,8 @@ export LD_LIBRARY_PATH="$HOME/miniconda3/lib:${LD_LIBRARY_PATH:-}"
 # 1. Clone LIBERO-Plus repository
 # =========================================
 if [ ! -d "$LIBERO_PLUS_REPO" ]; then
-    echo "[1/4] Cloning LIBERO-Plus repository..."
-    mkdir -p "$PROJECT_REPO/external_dependencies"
+    echo "[1/4] Cloning LIBERO-Plus repository into $LIBERO_PLUS_REPO..."
+    mkdir -p "$(dirname "$LIBERO_PLUS_REPO")"
     git clone https://github.com/sylvestf/LIBERO-plus.git "$LIBERO_PLUS_REPO"
 else
     echo "[1/4] LIBERO-Plus repository already exists (skipped)"

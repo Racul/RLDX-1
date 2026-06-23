@@ -6,6 +6,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_REPO="$SCRIPT_DIR/../../../.."
 GR00T_WHOLEBODYCONTROL_REPO="$PROJECT_REPO/external_dependencies/GR00T-WholeBodyControl"
 UV_ENV="$SCRIPT_DIR/GR00T-WholeBodyControl_uv"
+source "$SCRIPT_DIR/../_bench_env.sh"
 
 git submodule update --init $GR00T_WHOLEBODYCONTROL_REPO
 
@@ -22,6 +23,11 @@ if ! command -v git-lfs >/dev/null 2>&1; then
     echo "Git LFS not installed. Please install: https://git-lfs.github.com/"
     exit 1
 fi
+# Keep the large LFS object store off the SSD: redirect it to /data before
+# pulling. Working-tree checkouts still live in the submodule, but the
+# deduplicated object store — the bulk of the bytes — lands on /data.
+mkdir -p "$RLDX_BENCH_HOME/assets/gr00t-wbc-lfs"
+git -C "$GR00T_WHOLEBODYCONTROL_REPO" config lfs.storage "$RLDX_BENCH_HOME/assets/gr00t-wbc-lfs"
 git -C "$GR00T_WHOLEBODYCONTROL_REPO" lfs pull
 rm -rf "$GR00T_WHOLEBODYCONTROL_REPO/gr00t_wbc/dexmg/gr00trobosuite"
 git clone https://github.com/xieleo5/robosuite.git "$GR00T_WHOLEBODYCONTROL_REPO/gr00t_wbc/dexmg/gr00trobosuite" -b leo/support_g1_locomanip

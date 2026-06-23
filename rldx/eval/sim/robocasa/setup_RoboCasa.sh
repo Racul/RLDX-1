@@ -6,6 +6,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_REPO="$SCRIPT_DIR/../../../.."
 ROBOCASA_REPO="$PROJECT_REPO/external_dependencies/robocasa"
 UV_ENV="$SCRIPT_DIR/robocasa_uv"
+source "$SCRIPT_DIR/../_bench_env.sh"
 
 git submodule update --init $ROBOCASA_REPO
 
@@ -49,7 +50,9 @@ uv pip install --editable "$PROJECT_REPO" --no-deps
 #     print("No SIMULATION_TIMESTEP change needed")
 # PY
 
-# Assets for RoboCasa (kitchen)
+# Assets for RoboCasa (kitchen). Relocate the package asset dir onto /data and
+# symlink it back, so the multi-GB download lands off the SSD.
+relocate_asset_dir "$ROBOCASA_REPO/robocasa/models/assets" robocasa
 python "$ROBOCASA_REPO/robocasa/scripts/download_kitchen_assets.py" -y
 
 # Sanity import & env construction

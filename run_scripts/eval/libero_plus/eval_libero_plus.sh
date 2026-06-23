@@ -8,7 +8,8 @@
 # evaluation to a single LIBERO suite (libero_10 / libero_spatial /
 # libero_object / libero_goal).
 #
-# `LIBERO_PLUS_DATA_DIR` must point at the LIBERO-Plus dataset checkout.
+# `LIBERO_PLUS_DATA_DIR` points at the LIBERO-Plus checkout; it defaults to the
+# location the setup script writes ($RLDX_BENCH_HOME/LIBERO-plus on /data).
 
 set -euo pipefail
 export NO_ALBUMENTATIONS_UPDATE=1
@@ -17,8 +18,9 @@ MODEL_PATH="${1:-RLWRLD/RLDX-1-FT-LIBERO}"
 SUITE_FILTER="${2:-}"
 
 BASE_DIR="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
+source "$BASE_DIR/rldx/eval/sim/_bench_env.sh"
 LIBERO_PLUS_VENV="$BASE_DIR/rldx/eval/sim/LIBERO_PLUS/libero_plus_uv/.venv"
-LIBERO_PLUS_REPO="${LIBERO_PLUS_DATA_DIR:?Set LIBERO_PLUS_DATA_DIR to the LIBERO-Plus dataset checkout}"
+LIBERO_PLUS_REPO="${LIBERO_PLUS_DATA_DIR:-$RLDX_BENCH_HOME/LIBERO-plus}"
 export LIBERO_CONFIG_PATH="$LIBERO_PLUS_REPO/.libero_config"
 
 CKPT_NAME=$(basename "$MODEL_PATH")

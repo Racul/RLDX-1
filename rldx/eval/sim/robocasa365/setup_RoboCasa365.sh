@@ -6,6 +6,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_REPO="$SCRIPT_DIR/../../../.."
 ROBOCASA365_REPO="$PROJECT_REPO/external_dependencies/robocasa365"
 UV_ENV="$SCRIPT_DIR/robocasa365_uv"
+source "$SCRIPT_DIR/../_bench_env.sh"
 
 git submodule update --init "$ROBOCASA365_REPO"
 
@@ -32,7 +33,8 @@ uv pip install -e "$ROBOCASA365_REPO" --config-settings editable_mode=compat
 # Make your project importable in this venv without re-resolving deps
 uv pip install --editable "$PROJECT_REPO" --no-deps
 
-# Assets and env/macros setup for RoboCasa365
+# Assets and env/macros setup for RoboCasa365. Relocate assets onto /data first.
+relocate_asset_dir "$ROBOCASA365_REPO/robocasa/models/assets" robocasa365
 printf 'y\n' | python "$ROBOCASA365_REPO/robocasa/scripts/download_kitchen_assets.py"
 python "$ROBOCASA365_REPO/robocasa/scripts/setup_macros.py"
 

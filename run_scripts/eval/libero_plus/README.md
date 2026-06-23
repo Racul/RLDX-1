@@ -18,8 +18,10 @@ init, language, light, background, sensor noise).
 bash run_scripts/eval/libero_plus/setup_libero_plus.sh
 ```
 
-Builds the isolated venv and downloads the 6.4 GB perturbation asset zip
-from the HuggingFace dataset repo.
+Builds the isolated venv (on the SSD) and downloads the 6.4 GB perturbation
+asset zip from the HuggingFace dataset repo into
+`/data/home/<username>/rldx1_bench/LIBERO-plus` (the 1TB volume). Override the
+location by exporting `RLDX_BENCH_HOME` before running setup.
 
 ## 2. Fine-tune
 
@@ -29,10 +31,11 @@ at [`../libero/README.md`](../libero/README.md).
 ## 3. Run evaluation
 
 ```bash
-LIBERO_PLUS_DATA_DIR=/path/to/libero_plus \
 bash run_scripts/eval/libero_plus/eval_libero_plus.sh RLWRLD/RLDX-1-FT-LIBERO
 ```
 
-Optional second argument restricts to a single LIBERO suite (e.g.
-`libero_10`). Outputs land in
+`LIBERO_PLUS_DATA_DIR` defaults to the location setup wrote
+(`$RLDX_BENCH_HOME/LIBERO-plus`); set it explicitly only to point at a
+non-default checkout. Optional second argument restricts to a single LIBERO
+suite (e.g. `libero_10`). Outputs land in
 `output_final/libero_plus/<ckpt>/<suite>/<task>/`.

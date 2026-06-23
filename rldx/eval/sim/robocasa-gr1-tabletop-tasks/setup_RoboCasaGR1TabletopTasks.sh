@@ -6,6 +6,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_REPO="$SCRIPT_DIR/../../../.."
 ROBOCASA_GR1_TABLETOP_TASKS_REPO="$PROJECT_REPO/external_dependencies/robocasa-gr1-tabletop-tasks"
 UV_ENV="$SCRIPT_DIR/robocasa_uv"
+source "$SCRIPT_DIR/../_bench_env.sh"
 
 # Optional: if you want to avoid hardlink warnings with uv cache
 # export UV_LINK_MODE=copy
@@ -69,7 +70,8 @@ uv pip install pandas idna
 #     print("No SIMULATION_TIMESTEP change needed")
 # PY
 
-# Assets (per README)
+# Assets (per README). Relocate assets onto /data first.
+relocate_asset_dir "$ROBOCASA_GR1_TABLETOP_TASKS_REPO/robocasa/models/assets" robocasa-gr1-tabletop-tasks
 python "$ROBOCASA_GR1_TABLETOP_TASKS_REPO/robocasa/scripts/download_tabletop_assets.py" -y
 
 # Sanity import
