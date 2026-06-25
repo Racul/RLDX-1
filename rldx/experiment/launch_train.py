@@ -119,6 +119,7 @@ def _load_yaml_config(base_model_path: Optional[str]) -> Optional[Config]:
 
 
 if __name__ == "__main__":
+    # initialize logging
     if "LOG_LEVEL" not in os.environ:
         os.environ["LOG_LEVEL"] = "INFO"
     level = os.getenv("LOG_LEVEL", "INFO").upper()

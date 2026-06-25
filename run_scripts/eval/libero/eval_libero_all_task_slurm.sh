@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=libero_eval
+#SBATCH --job-name=libero_eval_all
 #SBATCH --partition=rtx3090,ada
 #SBATCH --qos=normal
 #SBATCH --nodes=1
@@ -7,11 +7,12 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --mem=60000
 #SBATCH --gres=gpu:1
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 #SBATCH --output=/data/home/james1990a/rldx_eval/libero/slurm/%x-%j.out
 
-# Simple LIBERO eval on a GPU compute node: serve RLDX-1, then roll out one suite
-# (libero_spatial = 10 tasks x 2 episodes) and record an mp4 video per task.
+# Full LIBERO eval on a GPU compute node: serve RLDX-1 once, then roll out all four
+# suites (spatial, object, goal, long) = 4 x 10 tasks x 2 episodes, recording an mp4
+# video per task.
 #
 # Everything goes to /data (1TB), never the /data_fast SSD:
 #   - videos + per-task logs : /data/home/james1990a/rldx_eval/libero/<label>/<suite>/<task>/
@@ -22,7 +23,7 @@
 #
 # Submit from the repo root (the --output dir must exist first):
 #   mkdir -p /data/home/james1990a/rldx_eval/libero/slurm
-#   sbatch run_scripts/eval/libero/eval_libero_slurm.sh [RUN_LABEL] [MODEL_PATH]
+#   sbatch run_scripts/eval/libero/eval_libero_all_task_slurm.sh [RUN_LABEL] [MODEL_PATH]
 
 set -u
 export NO_ALBUMENTATIONS_UPDATE=1
@@ -31,9 +32,8 @@ export PATH="$HOME/.local/bin:$PATH"   # ensure uv is on PATH under sbatch's non
 export HF_HOME=/data/home/james1990a/.cache/huggingface
 mkdir -p "$HF_HOME"
 
-RUN_LABEL="${1:-libero_simple_eval}"
+RUN_LABEL="${1:-libero_all_eval}"
 MODEL_PATH="${2:-RLWRLD/RLDX-1-FT-LIBERO}"
-SUITE="libero_spatial"
 N_EPISODES=2
 N_ENVS=2
 N_ACTION_STEPS=8
@@ -41,7 +41,7 @@ MAX_EPISODE_STEPS=720
 MAX_PARALLEL=4
 
 OUT_ROOT="/data/home/james1990a/rldx_eval/libero"
-RUN_DIR="$OUT_ROOT/$RUN_LABEL/$SUITE"
+RUN_DIR="$OUT_ROOT/$RUN_LABEL"
 mkdir -p "$RUN_DIR"
 
 BASE_DIR="$(git rev-parse --show-toplevel)"
@@ -57,7 +57,7 @@ find_free_port() {
 }
 PORT=$(find_free_port $((20000 + RANDOM % 40000)))
 
-echo "[i] RUN_LABEL=$RUN_LABEL  MODEL_PATH=$MODEL_PATH  SUITE=$SUITE"
+echo "[i] RUN_LABEL=$RUN_LABEL  MODEL_PATH=$MODEL_PATH"
 echo "[i] N_EPISODES=$N_EPISODES  N_ENVS=$N_ENVS  MAX_PARALLEL=$MAX_PARALLEL  PORT=$PORT"
 echo "[i] OUT=$RUN_DIR"
 
@@ -96,14 +96,69 @@ LIBERO_SPATIAL_TASKS=(
     "libero_sim/pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate"
     "libero_sim/pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate"
 )
+LIBERO_OBJECT_TASKS=(
+    "libero_sim/pick_up_the_alphabet_soup_and_place_it_in_the_basket"
+    "libero_sim/pick_up_the_cream_cheese_and_place_it_in_the_basket"
+    "libero_sim/pick_up_the_salad_dressing_and_place_it_in_the_basket"
+    "libero_sim/pick_up_the_bbq_sauce_and_place_it_in_the_basket"
+    "libero_sim/pick_up_the_ketchup_and_place_it_in_the_basket"
+    "libero_sim/pick_up_the_tomato_sauce_and_place_it_in_the_basket"
+    "libero_sim/pick_up_the_butter_and_place_it_in_the_basket"
+    "libero_sim/pick_up_the_milk_and_place_it_in_the_basket"
+    "libero_sim/pick_up_the_chocolate_pudding_and_place_it_in_the_basket"
+    "libero_sim/pick_up_the_orange_juice_and_place_it_in_the_basket"
+)
+LIBERO_GOAL_TASKS=(
+    "libero_sim/open_the_middle_drawer_of_the_cabinet"
+    "libero_sim/put_the_bowl_on_the_stove"
+    "libero_sim/put_the_wine_bottle_on_top_of_the_cabinet"
+    "libero_sim/open_the_top_drawer_and_put_the_bowl_inside"
+    "libero_sim/put_the_bowl_on_top_of_the_cabinet"
+    "libero_sim/push_the_plate_to_the_front_of_the_stove"
+    "libero_sim/put_the_cream_cheese_in_the_bowl"
+    "libero_sim/turn_on_the_stove"
+    "libero_sim/put_the_bowl_on_the_plate"
+    "libero_sim/put_the_wine_bottle_on_the_rack"
+)
+LIBERO_10_TASKS=(
+    "libero_sim/LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket"
+    "libero_sim/LIVING_ROOM_SCENE2_put_both_the_cream_cheese_box_and_the_butter_in_the_basket"
+    "libero_sim/KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it"
+    "libero_sim/KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it"
+    "libero_sim/LIVING_ROOM_SCENE5_put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate"
+    "libero_sim/STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy"
+    "libero_sim/LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate"
+    "libero_sim/LIVING_ROOM_SCENE1_put_both_the_alphabet_soup_and_the_cream_cheese_box_in_the_basket"
+    "libero_sim/KITCHEN_SCENE8_put_both_moka_pots_on_the_stove"
+    "libero_sim/KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it"
+)
+
+ALL_TASKS=() ALL_SUITES=() ALL_TASK_INDICES=()
+for i in "${!LIBERO_SPATIAL_TASKS[@]}"; do
+    ALL_TASKS+=("${LIBERO_SPATIAL_TASKS[$i]}"); ALL_SUITES+=("libero_spatial"); ALL_TASK_INDICES+=($i)
+done
+for i in "${!LIBERO_OBJECT_TASKS[@]}"; do
+    ALL_TASKS+=("${LIBERO_OBJECT_TASKS[$i]}"); ALL_SUITES+=("libero_object"); ALL_TASK_INDICES+=($i)
+done
+for i in "${!LIBERO_GOAL_TASKS[@]}"; do
+    ALL_TASKS+=("${LIBERO_GOAL_TASKS[$i]}"); ALL_SUITES+=("libero_goal"); ALL_TASK_INDICES+=($i)
+done
+for i in "${!LIBERO_10_TASKS[@]}"; do
+    ALL_TASKS+=("${LIBERO_10_TASKS[$i]}"); ALL_SUITES+=("libero_10"); ALL_TASK_INDICES+=($i)
+done
+
+TOTAL=${#ALL_TASKS[@]}
+echo "[i] total tasks: $TOTAL (4 suites x 10), batching $MAX_PARALLEL at a time"
 
 RUN_PIDS=()
-for TIDX in "${!LIBERO_SPATIAL_TASKS[@]}"; do
-    TASK="${LIBERO_SPATIAL_TASKS[$TIDX]}"
+for idx in "${!ALL_TASKS[@]}"; do
+    TASK="${ALL_TASKS[$idx]}"
+    SUITE="${ALL_SUITES[$idx]}"
+    TIDX="${ALL_TASK_INDICES[$idx]}"
     CLEAN="${TASK#libero_sim/}"
-    OUT="$RUN_DIR/$CLEAN"
+    OUT="$RUN_DIR/$SUITE/$CLEAN"
     mkdir -p "$OUT"
-    echo "[i] [$((TIDX + 1))/${#LIBERO_SPATIAL_TASKS[@]}] $CLEAN (n_ep=$N_EPISODES)"
+    echo "[i] [$((idx + 1))/$TOTAL] $SUITE :: $CLEAN (n_ep=$N_EPISODES)"
     "$LIBERO_PY" "$BASE_DIR/rldx/eval/rollout_policy.py" \
         --n_episodes $N_EPISODES \
         --policy_client_host 127.0.0.1 \
@@ -123,10 +178,12 @@ echo "[i] all tasks launched, waiting for completion..."
 for pid in "${RUN_PIDS[@]}"; do wait "$pid"; done
 
 echo "[i] ===== summary (success_rate per task) ====="
-for TIDX in "${!LIBERO_SPATIAL_TASKS[@]}"; do
-    CLEAN="${LIBERO_SPATIAL_TASKS[$TIDX]#libero_sim/}"
-    LOG="$RUN_DIR/$CLEAN/eval-$TIDX.log"
+for idx in "${!ALL_TASKS[@]}"; do
+    SUITE="${ALL_SUITES[$idx]}"
+    CLEAN="${ALL_TASKS[$idx]#libero_sim/}"
+    TIDX="${ALL_TASK_INDICES[$idx]}"
+    LOG="$RUN_DIR/$SUITE/$CLEAN/eval-$TIDX.log"
     SR=$(grep -oE "success rate[^0-9]*[0-9.]+" "$LOG" 2>/dev/null | tail -1 || echo "N/A")
-    echo "[i] $CLEAN -> $SR"
+    echo "[i] $SUITE :: $CLEAN -> $SR"
 done
 echo "[i] done. videos (mp4) + logs under: $RUN_DIR"
